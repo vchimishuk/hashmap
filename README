@@ -1,0 +1,8 @@
+Simple thread save C hashmap implementation.
+
+Author: Viacheslav Chumushuk <voice@root.ua>, 2010
+
+This library is released under the GNU General Public License version 3 or later, which is
+distributed in the COPYING file.
+You should have received a copy of the GNU General Public License along with
+this program.  If not, see <http://www.gnu.org/licenses/>.
