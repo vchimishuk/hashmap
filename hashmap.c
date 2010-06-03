@@ -37,7 +37,7 @@ static unsigned int hash_function(const char *key, int size)
 		h = 31 * h + key[i];
 	}
 
-	return h % (size + 1);
+	return h % size;
 }
 
 /*
