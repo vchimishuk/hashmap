@@ -35,8 +35,8 @@ struct hashmap {
 struct hashmap *hashmap_create(unsigned int size);
 void hashmap_free(struct hashmap *map);
 void hashmap_put(struct hashmap *map, const char *key, void *value);
-void *hashmap_get(struct hashmap *map, char *key);
-void *hashmap_remove(char *key);
+void *hashmap_get(struct hashmap *map, const char *key);
+void *hashmap_remove(struct hashmap *map, const char *key);
 int hashmap_size(struct hashmap *map);
 
 #endif /* HASHMAP_H_ */
