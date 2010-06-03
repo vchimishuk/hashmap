@@ -41,6 +41,7 @@ static unsigned int hash_function(const char *key, int size)
 	return h % size;
 }
 */
+
 /*
  * djb2
  * This algorithm (k=33) was first reported by dan bernstein many years ago
