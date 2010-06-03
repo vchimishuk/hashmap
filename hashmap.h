@@ -18,6 +18,12 @@
 #ifndef HASHMAP_H_
 #define HASHMAP_H_
 
+#define HASHMAP_THREAD_SAVE
+
+#ifdef HASHMAP_THREAD_SAVE
+#	include <pthread.h>
+#endif /* HASHMAP_THREAD_SAVE */
+
 
 struct hashmap_item {
 	char *key;
@@ -30,6 +36,9 @@ struct hashmap {
 	int size;
 	// Pointer to the first slot.
 	struct hashmap_item **table;
+#ifdef HASHMAP_THREAD_SAVE
+	pthread_mutex_t mutex;
+#endif /* HASHMAP_THREAD_SAVE */
 };
 
 struct hashmap *hashmap_create(unsigned int size);

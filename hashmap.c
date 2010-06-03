@@ -125,6 +125,13 @@ struct hashmap *hashmap_create(unsigned int size)
 	}
 	bzero(map->table, table_size);
 
+#ifdef HASHMAP_THREAD_SAVE
+	pthread_mutexattr_t mattr;
+	pthread_mutexattr_init(&mattr);
+	pthread_mutexattr_setpshared(&mattr, PTHREAD_PROCESS_SHARED);
+	pthread_mutex_init(&map->mutex, &mattr);
+#endif /* HASHMAP_THREAD_SAVE */
+
 	return map;
 }
 
@@ -133,6 +140,10 @@ struct hashmap *hashmap_create(unsigned int size)
  */
 void hashmap_free(struct hashmap *map)
 {
+#ifdef HASHMAP_THREAD_SAVE
+	pthread_mutex_lock(&map->mutex);
+#endif /* HASHMAP_THREAD_SAVE */
+
 	struct hashmap_item *p, *q;
 	int i;
 
@@ -148,6 +159,10 @@ void hashmap_free(struct hashmap *map)
 
 	free(map->table);
 	free(map);
+
+#ifdef HASHMAP_THREAD_SAVE
+	pthread_mutex_unlock(&map->mutex);
+#endif /* HASHMAP_THREAD_SAVE */
 }
 
 /*
@@ -162,6 +177,10 @@ void hashmap_put(struct hashmap *map, const char *key, void *value)
 
 	if (key == NULL)
 		return;
+
+#ifdef HASHMAP_THREAD_SAVE
+	pthread_mutex_lock(&map->mutex);
+#endif /* HASHMAP_THREAD_SAVE */
 
 	new_item = (struct hashmap_item *) malloc(sizeof(struct hashmap_item));
 	new_item->key = strdup(key);
@@ -178,12 +197,20 @@ void hashmap_put(struct hashmap *map, const char *key, void *value)
 		do {
 			if (strcmp(p->key, key) == 0) {
 				p->value = value;
+#ifdef HASHMAP_THREAD_SAVE
+				pthread_mutex_unlock(&map->mutex);
+#endif /* HASHMAP_THREAD_SAVE */
+
 				return;
 			}
 		} while(p->next && (p = p->next));
 
 		p->next = new_item;
 	}
+
+#ifdef HASHMAP_THREAD_SAVE
+	pthread_mutex_unlock(&map->mutex);
+#endif /* HASHMAP_THREAD_SAVE */
 }
 
 /*
@@ -205,10 +232,21 @@ void *hashmap_get(struct hashmap *map, const char *key)
 	if (p == NULL)
 		return NULL;
 
+#ifdef HASHMAP_THREAD_SAVE
+	pthread_mutex_lock(&map->mutex);
+#endif /* HASHMAP_THREAD_SAVE */
+
 	do {
 		if (strcmp(p->key, key) == 0)
+#ifdef HASHMAP_THREAD_SAVE
+			pthread_mutex_unlock(&map->mutex);
+#endif /* HASHMAP_THREAD_SAVE */
 			return p->value;
 	} while ((p = p->next) != NULL);
+
+#ifdef HASHMAP_THREAD_SAVE
+	pthread_mutex_unlock(&map->mutex);
+#endif /* HASHMAP_THREAD_SAVE */
 
 	return NULL;
 }
@@ -221,6 +259,10 @@ void *hashmap_remove(struct hashmap *map, const char *key)
 {
 	if (key == NULL)
 		return NULL;
+
+#ifdef HASHMAP_THREAD_SAVE
+	pthread_mutex_lock(&map->mutex);
+#endif /* HASHMAP_THREAD_SAVE */
 
 	unsigned int index = hash_function(key, map->size);
 	struct hashmap_item *p, *q;
@@ -241,12 +283,20 @@ void *hashmap_remove(struct hashmap *map, const char *key)
 
 			free_item(p);
 
+#ifdef HASHMAP_THREAD_SAVE
+			pthread_mutex_unlock(&map->mutex);
+#endif /* HASHMAP_THREAD_SAVE */
+
 			return val;
 		}
 
 		q = p;
 		p = p->next;
 	}
+
+#ifdef HASHMAP_THREAD_SAVE
+	pthread_mutex_unlock(&map->mutex);
+#endif /* HASHMAP_THREAD_SAVE */
 
 	return NULL;
 }
@@ -260,6 +310,10 @@ int hashmap_size(struct hashmap *map)
 	int size = 0;
 	struct hashmap_item *p;
 
+#ifdef HASHMAP_THREAD_SAVE
+	pthread_mutex_lock(&map->mutex);
+#endif /* HASHMAP_THREAD_SAVE */
+
 	for (i = 0; i < map->size; i++) {
 		p = map->table[i];
 
@@ -268,6 +322,10 @@ int hashmap_size(struct hashmap *map)
 			p = p->next;
 		}
 	}
+
+#ifdef HASHMAP_THREAD_SAVE
+	pthread_mutex_unlock(&map->mutex);
+#endif /* HASHMAP_THREAD_SAVE */
 
 	return size;
 }
