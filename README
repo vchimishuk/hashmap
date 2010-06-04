@@ -1,4 +1,4 @@
-Simple thread save C hashmap implementation.
+Simple thread safe C hashmap implementation.
 
 Author: Viacheslav Chumushuk <voice@root.ua>, 2010
 
