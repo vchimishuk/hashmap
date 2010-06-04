@@ -21,7 +21,7 @@
 #define HASHMAP_THREAD_SAVE
 
 #ifdef HASHMAP_THREAD_SAVE
-#	include <pthread.h>
+#include <pthread.h>
 #endif /* HASHMAP_THREAD_SAVE */
 
 
@@ -36,9 +36,17 @@ struct hashmap {
 	int size;
 	// Pointer to the first slot.
 	struct hashmap_item **table;
-#ifdef HASHMAP_THREAD_SAVE
+#	ifdef HASHMAP_THREAD_SAVE
 	pthread_mutex_t mutex;
-#endif /* HASHMAP_THREAD_SAVE */
+#	endif /* HASHMAP_THREAD_SAVE */
+};
+
+struct hashmap_iterator {
+	struct hashmap *map;
+	/* Index of active slot. */
+	int index;
+	/* Pointer to current item. */
+	struct hashmap_item *item;
 };
 
 struct hashmap *hashmap_create(unsigned int size);
@@ -47,5 +55,8 @@ void hashmap_put(struct hashmap *map, const char *key, void *value);
 void *hashmap_get(struct hashmap *map, const char *key);
 void *hashmap_remove(struct hashmap *map, const char *key);
 int hashmap_size(struct hashmap *map);
+struct hashmap_iterator *hashmap_get_iterator(struct hashmap *map);
+int hashmap_has_next(struct hashmap_iterator *iterator);
+void *hashmap_get_next(struct hashmap_iterator *iterator);
 
 #endif /* HASHMAP_H_ */

@@ -57,6 +57,26 @@ int main()
 
 	my_assert(9 == hashmap_size(map));
 
+	/*
+	 * Test iterator.
+	 */
+	struct hashmap_iterator *iterator = hashmap_get_iterator(map);
+	my_assert(NULL != iterator);
+//	my_assert(0 != hashmap_has_next(iterator));
+
+	hashmap_dump(map);
+
+//	printf("%d\n", (long) hashmap_get_next(iterator));
+//	printf("%d\n", (long) hashmap_get_next(iterator));
+//	printf("%d\n", (long) hashmap_get_next(iterator));
+//	printf("%d\n", (long) hashmap_get_next(iterator));
+//	printf("%d\n", (long) hashmap_get_next(iterator));
+//	printf("%d\n", (long) hashmap_get_next(iterator));
+
+	while (hashmap_has_next(iterator)) {
+		printf("%d\n", (long) hashmap_get_next(iterator));
+	}
+
 	printf("Tests passed!\n");
 
 	return EXIT_SUCCESS;

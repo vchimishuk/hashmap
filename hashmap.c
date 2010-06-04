@@ -125,12 +125,12 @@ struct hashmap *hashmap_create(unsigned int size)
 	}
 	bzero(map->table, table_size);
 
-#ifdef HASHMAP_THREAD_SAVE
+#	ifdef HASHMAP_THREAD_SAVE
 	pthread_mutexattr_t mattr;
 	pthread_mutexattr_init(&mattr);
 	pthread_mutexattr_setpshared(&mattr, PTHREAD_PROCESS_SHARED);
 	pthread_mutex_init(&map->mutex, &mattr);
-#endif /* HASHMAP_THREAD_SAVE */
+#	endif /* HASHMAP_THREAD_SAVE */
 
 	return map;
 }
@@ -140,9 +140,9 @@ struct hashmap *hashmap_create(unsigned int size)
  */
 void hashmap_free(struct hashmap *map)
 {
-#ifdef HASHMAP_THREAD_SAVE
+#	ifdef HASHMAP_THREAD_SAVE
 	pthread_mutex_lock(&map->mutex);
-#endif /* HASHMAP_THREAD_SAVE */
+#	endif /* HASHMAP_THREAD_SAVE */
 
 	struct hashmap_item *p, *q;
 	int i;
@@ -160,9 +160,9 @@ void hashmap_free(struct hashmap *map)
 	free(map->table);
 	free(map);
 
-#ifdef HASHMAP_THREAD_SAVE
+#	ifdef HASHMAP_THREAD_SAVE
 	pthread_mutex_unlock(&map->mutex);
-#endif /* HASHMAP_THREAD_SAVE */
+#	endif /* HASHMAP_THREAD_SAVE */
 }
 
 /*
@@ -178,9 +178,9 @@ void hashmap_put(struct hashmap *map, const char *key, void *value)
 	if (key == NULL)
 		return;
 
-#ifdef HASHMAP_THREAD_SAVE
+#	ifdef HASHMAP_THREAD_SAVE
 	pthread_mutex_lock(&map->mutex);
-#endif /* HASHMAP_THREAD_SAVE */
+#	endif /* HASHMAP_THREAD_SAVE */
 
 	new_item = (struct hashmap_item *) malloc(sizeof(struct hashmap_item));
 	new_item->key = strdup(key);
@@ -197,9 +197,9 @@ void hashmap_put(struct hashmap *map, const char *key, void *value)
 		do {
 			if (strcmp(p->key, key) == 0) {
 				p->value = value;
-#ifdef HASHMAP_THREAD_SAVE
+#				ifdef HASHMAP_THREAD_SAVE
 				pthread_mutex_unlock(&map->mutex);
-#endif /* HASHMAP_THREAD_SAVE */
+#				endif /* HASHMAP_THREAD_SAVE */
 
 				return;
 			}
@@ -208,9 +208,9 @@ void hashmap_put(struct hashmap *map, const char *key, void *value)
 		p->next = new_item;
 	}
 
-#ifdef HASHMAP_THREAD_SAVE
+#	ifdef HASHMAP_THREAD_SAVE
 	pthread_mutex_unlock(&map->mutex);
-#endif /* HASHMAP_THREAD_SAVE */
+#	endif /* HASHMAP_THREAD_SAVE */
 }
 
 /*
@@ -232,21 +232,21 @@ void *hashmap_get(struct hashmap *map, const char *key)
 	if (p == NULL)
 		return NULL;
 
-#ifdef HASHMAP_THREAD_SAVE
+#	ifdef HASHMAP_THREAD_SAVE
 	pthread_mutex_lock(&map->mutex);
-#endif /* HASHMAP_THREAD_SAVE */
+#	endif /* HASHMAP_THREAD_SAVE */
 
 	do {
 		if (strcmp(p->key, key) == 0)
-#ifdef HASHMAP_THREAD_SAVE
+#			ifdef HASHMAP_THREAD_SAVE
 			pthread_mutex_unlock(&map->mutex);
-#endif /* HASHMAP_THREAD_SAVE */
+#			endif /* HASHMAP_THREAD_SAVE */
 			return p->value;
 	} while ((p = p->next) != NULL);
 
-#ifdef HASHMAP_THREAD_SAVE
+#	ifdef HASHMAP_THREAD_SAVE
 	pthread_mutex_unlock(&map->mutex);
-#endif /* HASHMAP_THREAD_SAVE */
+#	endif /* HASHMAP_THREAD_SAVE */
 
 	return NULL;
 }
@@ -260,9 +260,9 @@ void *hashmap_remove(struct hashmap *map, const char *key)
 	if (key == NULL)
 		return NULL;
 
-#ifdef HASHMAP_THREAD_SAVE
+#	ifdef HASHMAP_THREAD_SAVE
 	pthread_mutex_lock(&map->mutex);
-#endif /* HASHMAP_THREAD_SAVE */
+#	endif /* HASHMAP_THREAD_SAVE */
 
 	unsigned int index = hash_function(key, map->size);
 	struct hashmap_item *p, *q;
@@ -283,9 +283,9 @@ void *hashmap_remove(struct hashmap *map, const char *key)
 
 			free_item(p);
 
-#ifdef HASHMAP_THREAD_SAVE
+#			ifdef HASHMAP_THREAD_SAVE
 			pthread_mutex_unlock(&map->mutex);
-#endif /* HASHMAP_THREAD_SAVE */
+#			endif /* HASHMAP_THREAD_SAVE */
 
 			return val;
 		}
@@ -294,9 +294,9 @@ void *hashmap_remove(struct hashmap *map, const char *key)
 		p = p->next;
 	}
 
-#ifdef HASHMAP_THREAD_SAVE
+#	ifdef HASHMAP_THREAD_SAVE
 	pthread_mutex_unlock(&map->mutex);
-#endif /* HASHMAP_THREAD_SAVE */
+#	endif /* HASHMAP_THREAD_SAVE */
 
 	return NULL;
 }
@@ -310,9 +310,9 @@ int hashmap_size(struct hashmap *map)
 	int size = 0;
 	struct hashmap_item *p;
 
-#ifdef HASHMAP_THREAD_SAVE
+#	ifdef HASHMAP_THREAD_SAVE
 	pthread_mutex_lock(&map->mutex);
-#endif /* HASHMAP_THREAD_SAVE */
+#	endif /* HASHMAP_THREAD_SAVE */
 
 	for (i = 0; i < map->size; i++) {
 		p = map->table[i];
@@ -323,9 +323,112 @@ int hashmap_size(struct hashmap *map)
 		}
 	}
 
-#ifdef HASHMAP_THREAD_SAVE
+#	ifdef HASHMAP_THREAD_SAVE
 	pthread_mutex_unlock(&map->mutex);
-#endif /* HASHMAP_THREAD_SAVE */
+#	endif /* HASHMAP_THREAD_SAVE */
 
 	return size;
+}
+
+/*
+ * Returns iterator for the given map.
+ */
+struct hashmap_iterator *hashmap_get_iterator(struct hashmap *map)
+{
+	if (!map)
+		return NULL;
+
+	struct hashmap_iterator *iterator = malloc(sizeof(struct hashmap_iterator));
+	if (!iterator)
+		return NULL;
+
+	iterator->map = map;
+	iterator->index = 0;
+	iterator->item = NULL;
+
+	return iterator;
+}
+
+/*
+ * Returns true if we have at least one item for next iteration.
+ */
+int hashmap_has_next(struct hashmap_iterator *iterator)
+{
+	struct hashmap_item *item = NULL;
+	int index = iterator->index;
+
+#	ifdef HASHMAP_THREAD_SAVE
+	pthread_mutex_lock(&iterator->map->mutex);
+#	endif /* HASHMAP_THREAD_SAVE */
+
+	if (iterator->item) {
+		if (iterator->item->next) {
+#			ifdef HASHMAP_THREAD_SAVE
+			pthread_mutex_unlock(&iterator->map->mutex);
+#			endif /* HASHMAP_THREAD_SAVE */
+
+			return 1;
+		}
+
+		index++;
+	}
+
+	/* Find next slot with items and returns the first one. */
+	for (; index < iterator->map->size; index++) {
+		if (iterator->map->table[index] && iterator->map->table[index]->key) {
+#			ifdef HASHMAP_THREAD_SAVE
+			pthread_mutex_unlock(&iterator->map->mutex);
+#			endif /* HASHMAP_THREAD_SAVE */
+
+			return 1;
+		}
+	}
+
+#	ifdef HASHMAP_THREAD_SAVE
+	pthread_mutex_unlock(&iterator->map->mutex);
+#	endif /* HASHMAP_THREAD_SAVE */
+
+	return item != NULL;
+}
+
+/*
+ * Returns next item in the given iteration.
+ */
+void *hashmap_get_next(struct hashmap_iterator *iterator)
+{
+#	ifdef HASHMAP_THREAD_SAVE
+	pthread_mutex_lock(&iterator->map->mutex);
+#	endif /* HASHMAP_THREAD_SAVE */
+
+	if (iterator->item) {
+		if (iterator->item->next) {
+			iterator->item = iterator->item->next;
+#			ifdef HASHMAP_THREAD_SAVE
+			pthread_mutex_unlock(&iterator->map->mutex);
+#			endif /* HASHMAP_THREAD_SAVE */
+
+			return iterator->item->value;
+		}
+
+		iterator->item = NULL;
+		iterator->index++;
+	}
+
+	/* Find next slot with items and returns the first one. */
+	for (; iterator->index < iterator->map->size; iterator->index++) {
+		if (iterator->map->table[iterator->index]) {
+			iterator->item = iterator->map->table[iterator->index];
+#			ifdef HASHMAP_THREAD_SAVE
+			pthread_mutex_unlock(&iterator->map->mutex);
+#			endif /* HASHMAP_THREAD_SAVE */
+
+			return iterator->item->value;
+		}
+	}
+
+#	ifdef HASHMAP_THREAD_SAVE
+	pthread_mutex_unlock(&iterator->map->mutex);
+#	endif /* HASHMAP_THREAD_SAVE */
+
+	return NULL;
 }
